@@ -1,0 +1,78 @@
+import numpy as np
+import math as m
+import random as rd
+class SA():
+    # sa = SA(f=lambda x:x[0]**2+x[1]**2-x[2],use_alpha=True,alpha=0.99,bound=[[-1,1],[2,3],[1,4]])
+    #该模拟退火算法模型用于计算最小值，如果计算最大值，则函数取负
+    #函数的写法实例：f = lambda x:x[0]**2+x[1]**2
+    #约束条件写法实例：x1,x2约束条件[[1,2],[3,4]]
+    def __init__(self,f = None,tmp=100,min_tmp=0.1,balance=40,alpha=0.98,bound=None,use_alpha=False,record=False):
+        self.t0 = self.tmp = tmp#初始温度
+        self.min_tmp = min_tmp#最小停止温度
+        self.balance = balance#内循环次数
+        self.alpha = alpha#降温速率
+        self.use_alpha = use_alpha#是否使用降温速率
+        self.BOUND = bound#变量约束条件
+        self.counter = 0#外循环计数器
+        self.f = f#目标函数
+        self.best_x = self.x = self.init_x()#自变量初始化
+        self.best_fun = self.fun = self.f(self.x)#初始函数值
+        self.record = record#是否查看记录
+    
+    def init_x(self):
+        """产生初始解"""
+        x = np.zeros(len(self.BOUND))
+        for i,bound in enumerate(self.BOUND):
+            x[i] = np.random.uniform(bound[0],bound[1])
+        return x
+    
+    def produce_new(self,X,tmp):
+        """依据当前解，产生新的解"""
+        return np.array([x+rd.uniform(-0.5,0.5)*tmp for x in X])
+
+    def check_x(self,X):
+        """检验新产生的变量是否符合约束条件"""
+        flags = []
+        for i,bound in enumerate(self.BOUND):
+            flag = X[i]<bound[0] or X[i]> bound[1]
+            flags.append(flag)
+        if True  in flags:
+            return True
+        else:
+            return False    
+        
+    def judge(self,de,tmp):
+        if de < 0:
+            return True
+        elif np.random.random() < m.exp(-m.fabs(de)/tmp):
+            return True
+        else:
+            return False
+        
+    def evolve(self):
+        while self.tmp > self.min_tmp:
+            for _ in range(self.balance):
+                x_new = self.produce_new(self.x,self.tmp)
+                if self.check_x(x_new):#
+                    continue
+                fun_new = self.f(x_new)
+                de = fun_new - self.fun
+                if self.judge(de,self.tmp):
+                    self.x,self.fun = x_new,fun_new
+                if self.fun < self.best_fun:#记录全局最优解和最优值
+                    self.best_x,self.best_fun = self.x,self.fun 
+            self.counter+=1
+            if self.use_alpha == True:
+                self.tmp *= self.alpha
+            else:
+                self.tmp = self.t0/(1+self.counter)
+            if self.record:
+                print(f'x:{self.x},fun={self.fun},tmp={self.tmp},counter={self.counter}')
+        print(np.round(self.best_x,5),round(self.best_fun,5))
+        
+
+sa = SA(f=lambda x:x[1]*m.sin(x[1]-x[0])+x[0]*m.cos(x[00]-x[1]),
+        bound=[[2,8],[2,8]],
+       record=False,
+       use_alpha=True)
+sa.evolve()
